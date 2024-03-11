@@ -1,0 +1,602 @@
+Program.Sub.ScreenSU.Start
+Gui.FormPurgeWOs..Create
+Gui.FormPurgeWOs..Size(15255,11055)
+Gui.FormPurgeWOs..MinX(0)
+Gui.FormPurgeWOs..MinY(0)
+Gui.FormPurgeWOs..Position(0,0)
+Gui.FormPurgeWOs..BackColor(-2147483633)
+Gui.FormPurgeWOs..MousePointer(0)
+Gui.FormPurgeWOs..Event(UnLoad,Form_UnLoad)
+Gui.FormPurgeWOs..Caption("Purge Work Orders to History by Closed Date")
+Gui.FormPurgeWOs..MaxButton(True)
+Gui.FormPurgeWOs..Sizeable(True)
+Gui.FormPurgeWOs.GsGCJobs.Create(GsGridControl)
+Gui.FormPurgeWOs.GsGCJobs.Size(14925,9375)
+Gui.FormPurgeWOs.GsGCJobs.Position(90,645)
+Gui.FormPurgeWOs.GsGCJobs.Event(CellValueChanged,GsGCJobs_CellValueChanged)
+Gui.FormPurgeWOs.GsGCJobs.Visible(True)
+Gui.FormPurgeWOs.cmdPurge.Create(Button)
+Gui.FormPurgeWOs.cmdPurge.Size(855,375)
+Gui.FormPurgeWOs.cmdPurge.Position(90,10065)
+Gui.FormPurgeWOs.cmdPurge.Caption("Purge")
+Gui.FormPurgeWOs.cmdPurge.Event(Click,cmdPurge_Click)
+Gui.FormPurgeWOs.lblPurgeDate.Create(Label,"Purge Through Closed Date:",True,2160,255,0,90,300,True,0,"Arial",8,-2147483633,0)
+Gui.FormPurgeWOs.dtpPurgeDate.Create(DatePicker)
+Gui.FormPurgeWOs.dtpPurgeDate.Size(1425,285)
+Gui.FormPurgeWOs.dtpPurgeDate.Position(2280,240)
+Gui.FormPurgeWOs.lblSelected.Create(Label,"Jobs Selected:",True,1200,255,0,13080,420,True,0,"Arial",8,-2147483633,0)
+Gui.FormPurgeWOs.cmdRun.Create(Button)
+Gui.FormPurgeWOs.cmdRun.Size(495,360)
+Gui.FormPurgeWOs.cmdRun.Position(3750,210)
+Gui.FormPurgeWOs.cmdRun.Caption("Run")
+Gui.FormPurgeWOs.cmdRun.Event(Click,cmdRun_Click)
+Gui.FormPurgeWOs.lblValue.Create(Label,"0",True,765,255,0,14250,420,True,0,"Arial",8,-2147483633,0)
+Gui.FormPurgeWOs.progressBar1.Create(ProgressBar)
+Gui.FormPurgeWOs.progressBar1.Visible(False)
+Gui.FormPurgeWOs.progressBar1.Size(4815,270)
+Gui.FormPurgeWOs.progressBar1.Position(8190,330)
+Gui.FormPurgeWOs.lblProgBar.Create(Label,"****Change****",False,4815,270,0,8190,75,True,0,"Arial",10,-2147483633,0)
+Gui.FormPurgeWOs.cmdUnSelAll.Create(Button)
+Gui.FormPurgeWOs.cmdUnSelAll.Size(1065,375)
+Gui.FormPurgeWOs.cmdUnSelAll.Position(1065,10065)
+Gui.FormPurgeWOs.cmdUnSelAll.Caption("Unselect All")
+Gui.FormPurgeWOs.cmdUnSelAll.Event(Click,cmdUnSelAll_Click)
+Program.Sub.ScreenSU.End
+
+Program.Sub.Preflight.Start
+	V.Global.bLongPart.Declare
+Program.Sub.Preflight.End
+
+Program.Sub.Main.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.sIcon.Declare
+
+	F.ODBC.Connection!con.OpenConnection(V.Ambient.PDSN,V.Ambient.PUser,V.Ambient.PPass,259200)
+
+	F.Intrinsic.Control.CallSub(setanchors)
+	F.Intrinsic.Control.CallSub(CheckLongPart)
+
+	Function.Intrinsic.String.Build("{0}\GAB\GAS\gss2.ico",V.Caller.PluginsDir,V.Local.sIcon)
+	Gui.FormPurgeWOs..Icon(V.Local.sIcon)
+
+	Gui.FormPurgeWOs..Show
+
+	Gui.FormPurgeWOs.lblProgBar.Visible(True)
+	Gui.FormPurgeWOs.lblProgBar.Caption("Checking Tables....")
+	Gui.FormPurgeWOs.dtpPurgeDate.Enabled(False)
+	Gui.FormPurgeWOs.cmdRun.Enabled(False)
+	Gui.FormPurgeWOs.cmdPurge.Enabled(False)
+	Gui.FormPurgeWOs.cmdUnSelAll.Enabled(False)
+	F.Intrinsic.Control.CallSub(createtables)
+	Gui.FormPurgeWOs.lblProgBar.Visible(False)
+	Gui.FormPurgeWOs.dtpPurgeDate.Enabled(True)
+	Gui.FormPurgeWOs.cmdRun.Enabled(True)
+	Gui.FormPurgeWOs.cmdPurge.Enabled(True)
+	Gui.FormPurgeWOs.cmdUnSelAll.Enabled(True)
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: GAB_4073_Purge_WOs.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}.",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.Main.End
+
+Program.Sub.Form_UnLoad.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+F.ODBC.Connection!con.Close
+F.Intrinsic.Control.End 
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: GAB_4073_Purge_WOs.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}.",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.Form_UnLoad.End
+
+Program.Sub.CheckLongPart.Start
+	F.Global.General.ReadOption("400861",0,False,"0000",V.Global.bLongPart)
+	F.Intrinsic.Control.If(V.Global.bLongPart,=,False)
+		F.Global.General.ReadOption("400861",0,False,"0004",V.Global.bLongPart)
+	F.Intrinsic.Control.EndIf
+Program.Sub.CheckLongPart.End
+
+Program.Sub.GsGCJobs_CellValueChanged.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.iValue.Declare(Long)
+
+	F.Intrinsic.Control.If(V.Args.Value,=,False)
+		F.Intrinsic.Math.Sub(V.Screen.FormPurgeWOs!lblValue.Text,1,V.Local.iValue)
+		Gui.FormPurgeWOs.lblValue.Caption(V.Local.iValue)
+	F.Intrinsic.Control.ElseIf(V.Args.Value,=,True)
+		F.Intrinsic.Math.Add(V.Screen.FormPurgeWOs!lblValue.Text,1,V.Local.iValue)
+		Gui.FormPurgeWOs.lblValue.Caption(V.Local.iValue)
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: GAB_4073_Purge_WOs.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}.",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.GsGCJobs_CellValueChanged.End
+
+Program.Sub.cmdRun_Click.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.sSQL.Declare(String)
+	V.Local.sDate.Declare(String)
+	V.Local.sJob.Declare(String)
+
+	F.Intrinsic.Control.If(V.DataTable.Jobs.Exists,=,True)
+		F.Data.DataTable.Close("Jobs")
+	F.Intrinsic.Control.EndIf
+
+	F.Intrinsic.String.Format(V.Screen.FormPurgeWOs!dtpPurgeDate.Value,"YYYY-MM-DD",V.Local.sDate)
+	F.Intrinsic.String.Build("SELECT JOB,SUFFIX,DATE_CLOSED,COALESCE(PART,'') AS PART,'' As DISPLAY_PART,LOCATION,DESCRIPTION FROM V_JOB_HEADER WHERE DATE_CLOSED < '{0}' AND DATE_CLOSED <> '1900-01-01' ORDER BY DATE_CLOSED;",V.Local.sDate,V.Local.sSQL)
+	F.Data.DataTable.CreateFromSQL("Jobs","con",V.Local.sSQL,True)
+	F.Data.DataTable.AddColumn("Jobs","Select",Boolean,True)
+	F.Data.DataTable.AddColumn("Jobs","History",Boolean,False)
+	F.Data.DataTable.AddDisplayPartColumn("Jobs",0,"PART","DISPLAY_PART")
+	F.Intrinsic.Control.If(V.DataTable.Jobs.RowCount,<>,0)
+		F.Intrinsic.Control.CallSub(checkhistory)
+	F.Intrinsic.Control.EndIf
+
+	Gui.FormPurgeWOs.GsGCJobs.AddGridViewFromDataTable("Jobs","Jobs")
+	F.Intrinsic.Control.CallSub(gridviewproperties)
+	Gui.FormPurgeWOs.GsGCJobs.MainView("Jobs")
+
+	Gui.FormPurgeWOs.lblValue.Caption(V.DataTable.Jobs.RowCount)
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: GAB_4073_Purge_WOs.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}.",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.cmdRun_Click.End
+
+Program.Sub.CheckHistory.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.iCnt.Declare(Long,0)
+	V.Local.sJob.Declare(String)
+	V.Local.sSuffix.Declare(String)
+	V.Local.sSQL.Declare(String)
+	V.Local.sRet.Declare(String)
+
+	Gui.FormPurgeWOs.lblProgBar.Visible(True)
+	Gui.FormPurgeWOs.lblProgBar.Caption("Checking History....")
+	Gui.FormPurgeWOs.progressBar1.Visible(True)
+	Gui.FormPurgeWOs.progressBar1.Min(0)
+	Gui.FormPurgeWOs.progressBar1.Max(V.DataTable.Jobs.Rowcount)
+	Gui.FormPurgeWOs.dtpPurgeDate.Enabled(False)
+	Gui.FormPurgeWOs.cmdRun.Enabled(False)
+	Gui.FormPurgeWOs.cmdPurge.Enabled(False)
+	Gui.FormPurgeWOs.cmdUnSelAll.Enabled(False)
+
+	F.Intrinsic.Control.For(V.Local.iCnt,0,V.DataTable.Jobs.RowCount--,1)
+		Gui.FormPurgeWOs.progressBar1.Value(V.Local.iCnt)
+		V.Local.sJob.Set(V.DataTable.Jobs(V.Local.iCnt).JOB!FieldValTrim)
+		V.Local.sSuffix.Set(V.DataTable.Jobs(V.Local.iCnt).SUFFIX!FieldValTrim)
+		F.Intrinsic.String.Build("SELECT * FROM JOB_HIST_MAST WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob.Trim,V.Local.sSuffix.Trim,V.Local.sSQL)
+		F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sRet)
+		F.Intrinsic.Control.If(V.Local.sRet,<>,"")
+			F.Data.DataTable.SetValue("Jobs",V.Local.iCnt,"History",True)
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.iCnt)
+
+	Gui.FormPurgeWOs.progressBar1.Visible(False)
+	Gui.FormPurgeWOs.lblProgBar.Visible(False)
+	Gui.FormPurgeWOs.dtpPurgeDate.Enabled(True)
+	Gui.FormPurgeWOs.cmdRun.Enabled(True)
+	Gui.FormPurgeWOs.cmdPurge.Enabled(True)
+	Gui.FormPurgeWOs.cmdUnSelAll.Enabled(True)
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: GAB_4073_Purge_WOs.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}.",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.CheckHistory.End
+
+Program.Sub.cmdPurge_Click.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.iCnt.Declare(Long,0)
+	V.Local.sJob.Declare(String)
+	V.Local.sSuffix.Declare(String)
+	V.Local.sSQL.Declare(String)
+	V.Local.sRet.Declare(String)
+	V.Local.sKey.Declare(String)
+
+	F.Intrinsic.Control.If(V.DataTable.Jobs.Exists,=,False)
+		F.Intrinsic.Control.ExitSub
+	F.Intrinsic.Control.EndIf
+
+	Gui.FormPurgeWOs.lblProgBar.Visible(True)
+	Gui.FormPurgeWOs.lblProgBar.Caption("Purging Work Orders to History")
+	Gui.FormPurgeWOs.progressBar1.Visible(True)
+	Gui.FormPurgeWOs.progressBar1.Min(0)
+	Gui.FormPurgeWOs.progressBar1.Max(V.DataTable.Jobs.Rowcount)
+	Gui.FormPurgeWOs.dtpPurgeDate.Enabled(False)
+	Gui.FormPurgeWOs.cmdRun.Enabled(False)
+	Gui.FormPurgeWOs.cmdPurge.Enabled(False)
+	Gui.FormPurgeWOs.cmdUnSelAll.Enabled(False)
+	Gui.FormPurgeWOs.GsGCJobs.Enabled(False)
+
+	F.Intrinsic.Control.For(V.Local.iCnt,0,V.DataTable.Jobs.RowCount--,1)
+		Gui.FormPurgeWOs.progressBar1.Value(V.Local.iCnt)
+		V.Local.sJob.Set(V.DataTable.Jobs(V.Local.iCnt).JOB!FieldValTrim)
+		V.Local.sSuffix.Set(V.DataTable.Jobs(V.Local.iCnt).SUFFIX!FieldValTrim)
+		F.Intrinsic.Control.If(V.DataTable.Jobs(V.Local.iCnt).Select!FieldVal,=,True)
+			F.Intrinsic.Control.If(V.DataTable.Jobs(V.Local.iCnt).History!FieldVal,=,True)
+				'DELETE
+				F.Intrinsic.String.Build("DELETE FROM JOB_HIST_MAST WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+				F.ODBC.Connection!con.Execute(V.Local.sSQL)
+				F.Intrinsic.String.Build("DELETE FROM JOB_HIST_OPS WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+				F.ODBC.Connection!con.Execute(V.Local.sSQL)
+				F.Intrinsic.String.Build("DELETE FROM JOB_HIST_DTL WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+				F.ODBC.Connection!con.Execute(V.Local.sSQL)
+				F.Intrinsic.String.Build("DELETE FROM JOB_DTL_SUPP_H WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+				F.ODBC.Connection!con.Execute(V.Local.sSQL)
+				'DELETE Comments
+				F.Intrinsic.Control.If(V.Caller.GSSVersion,=,2015.3,"OR",V.Caller.GSSVersion,=,2016.1)
+					F.Intrinsic.String.Build("SELECT COMMENTS_KEY FROM COMMENTS_XREF WHERE UNIQUE_VALUE LIKE '{0}{1}%';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+					F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sKey)
+					F.Intrinsic.Control.If(V.Local.sKey,<>,"")
+						F.Intrinsic.String.Build("DELETE FROM COMMENTS WHERE ID IN (SELECT COMMENTS_KEY FROM COMMENTS_XREF WHERE UNIQUE_VALUE LIKE '{0}%')",V.Local.sKey,V.Local.sSQL)
+						F.ODBC.Connection!con.Execute(V.Local.sSQL)
+						F.Intrinsic.String.Build("DELETE FROM COMMENTS_XREF WHERE UNIQUE_VALUE LIKE '{0}{1}%';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+						F.ODBC.Connection!con.Execute(V.Local.sSQL)
+					F.Intrinsic.Control.EndIf
+				F.Intrinsic.Control.EndIf
+				
+				F.Intrinsic.Control.If(V.Caller.GSSVersion,>=,2016.2)
+					F.Intrinsic.String.Build("DELETE FROM JOB_DTL_H_NOTES WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+					F.ODBC.Connection!con.Execute(V.Local.sSQL)
+					F.Intrinsic.String.Build("DELETE FROM WO_H_SEQ_COMMENTS WHERE WO = '{0}' AND WO_SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+					F.ODBC.Connection!con.Execute(V.Local.sSQL)
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+			
+			'Insert Job into History Table for all four tables and delete from the active tables as well
+			F.Intrinsic.String.Build("INSERT INTO JOB_HIST_MAST SELECT * FROM JOB_HEADER WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+			F.ODBC.Connection!con.Execute(V.Local.sSQL)
+			F.Intrinsic.String.Build("DELETE FROM JOB_HEADER WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+			F.ODBC.Connection!con.Execute(V.Local.sSQL)
+			F.Intrinsic.String.Build("INSERT INTO JOB_HIST_OPS SELECT * FROM JOB_OPERATIONS WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+			F.ODBC.Connection!con.Execute(V.Local.sSQL)
+			F.Intrinsic.String.Build("DELETE FROM JOB_OPERATIONS WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+			F.ODBC.Connection!con.Execute(V.Local.sSQL)
+			F.Intrinsic.String.Build("INSERT INTO JOB_HIST_DTL SELECT * FROM JOB_DETAIL WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+			F.ODBC.Connection!con.Execute(V.Local.sSQL)
+			F.Intrinsic.String.Build("DELETE FROM JOB_DETAIL WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+			F.ODBC.Connection!con.Execute(V.Local.sSQL)
+			F.Intrinsic.String.Build("INSERT INTO JOB_DTL_SUPP_H SELECT * FROM JOB_DTL_SUPP WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+			F.ODBC.Connection!con.Execute(V.Local.sSQL)
+			F.Intrinsic.String.Build("DELETE FROM JOB_DTL_SUPP WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+			F.ODBC.Connection!con.Execute(V.Local.sSQL)
+			'DELETE FROM WIP_PARTIAL_CLS
+			F.Intrinsic.String.Build("DELETE FROM WIP_PARTIAL_CLS WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+			F.ODBC.Connection!con.Execute(V.Local.sSQL)
+			'DELETE FROM SCHED_WO_SUPP
+			F.Intrinsic.String.Build("DELETE FROM SCHED_WO_SUPP WHERE WO = '{0}' AND WO_SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+			F.ODBC.Connection!con.Execute(V.Local.sSQL)
+			'UPDATE Comments
+			F.Intrinsic.Control.If(V.Caller.GSSVersion,=,2015.3,"OR",V.Caller.GSSVersion,=,2016.1)
+				F.Intrinsic.String.Build("SELECT COMMENTS_KEY FROM COMMENTS_XREF WHERE UNIQUE_VALUE LIKE '{0}{1}%';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+				F.ODBC.Connection!con.ExecuteAndReturn(V.Local.sSQL,V.Local.sKey)
+				F.Intrinsic.Control.If(V.Local.sKey,<>,"")
+					'COMMENT_XREF
+					F.Intrinsic.String.Build("INSERT INTO COMMENTS_XREF_TEMP SELECT * FROM COMMENTS_XREF WHERE UNIQUE_VALUE LIKE '{0}{1}%';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+					F.ODBC.Connection!con.Execute(V.Local.sSQL)
+					F.Intrinsic.String.Build("DELETE FROM COMMENTS_XREF WHERE UNIQUE_VALUE LIKE '{0}{1}%';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+					F.ODBC.Connection!con.Execute(V.Local.sSQL)
+					F.ODBC.Connection!con.Execute("UPDATE COMMENTS_XREF_TEMP SET XREF_TYPE = 1810;")
+					F.ODBC.Connection!con.Execute("INSERT INTO COMMENTS_XREF SELECT * FROM COMMENTS_XREF_TEMP;")
+					'COMMENTS
+					F.Intrinsic.String.Build("INSERT INTO COMMENTS_TEMP SELECT * FROM COMMENTS WHERE ID IN (SELECT COMMENTS_KEY FROM COMMENTS_XREF_TEMP);",V.Local.sKey,V.Local.sSQL)
+					F.ODBC.Connection!con.Execute(V.Local.sSQL)
+					F.Intrinsic.String.Build("DELETE FROM COMMENTS WHERE ID IN (SELECT COMMENTS_KEY FROM COMMENTS_XREF_TEMP);",V.Local.sKey,V.Local.sSQL)
+					F.ODBC.Connection!con.Execute(V.Local.sSQL)
+					F.ODBC.Connection!con.Execute("UPDATE COMMENTS_TEMP SET TYPE = 1810;")
+					F.ODBC.Connection!con.Execute("INSERT INTO COMMENTS SELECT * FROM COMMENTS_TEMP;")
+					'DELETE Comment Temp Tables
+					F.ODBC.Connection!con.Execute("DELETE FROM COMMENTS_XREF_TEMP;")
+					F.ODBC.Connection!con.Execute("DELETE FROM COMMENTS_TEMP;")
+				F.Intrinsic.Control.EndIf
+			F.Intrinsic.Control.EndIf
+			
+			F.Intrinsic.Control.If(V.Caller.GSSVersion,>=,2016.2)
+				F.Intrinsic.String.Build("INSERT INTO JOB_DTL_H_NOTES SELECT * FROM JOB_DTL_NOTES WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+				F.ODBC.Connection!con.Execute(V.Local.sSQL)
+				F.Intrinsic.String.Build("DELETE FROM JOB_DTL_NOTES WHERE JOB = '{0}' AND SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+				F.ODBC.Connection!con.Execute(V.Local.sSQL)
+				F.Intrinsic.String.Build("INSERT INTO WO_H_SEQ_COMMENTS SELECT * FROM WO_SEQ_COMMENTS WHERE WO = '{0}' AND WO_SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+				F.ODBC.Connection!con.Execute(V.Local.sSQL)
+				F.Intrinsic.String.Build("DELETE FROM WO_SEQ_COMMENTS WHERE WO = '{0}' AND WO_SUFFIX = '{1}';",V.Local.sJob,V.Local.sSuffix,V.Local.sSQL)
+				F.ODBC.Connection!con.Execute(V.Local.sSQL)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.iCnt)
+
+'	F.Intrinsic.Control.CallSub(cmdrun_click)
+
+	Gui.FormPurgeWOs.progressBar1.Visible(False)
+	Gui.FormPurgeWOs.lblProgBar.Visible(False)
+	Gui.FormPurgeWOs.dtpPurgeDate.Enabled(True)
+	Gui.FormPurgeWOs.cmdRun.Enabled(True)
+	Gui.FormPurgeWOs.cmdPurge.Enabled(True)
+	Gui.FormPurgeWOs.cmdUnSelAll.Enabled(True)
+	Gui.FormPurgeWOs.GsGCJobs.Enabled(True)
+	Function.Intrinsic.Control.End 
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: GAB_4073_Purge_WOs.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}.",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.cmdPurge_Click.End
+
+Program.Sub.GridViewProperties.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.iRet.Declare
+	V.Local.iCnt.Declare
+
+	Gui.FormPurgeWOs.GsGCJobs.SetGridViewProperty("Jobs","multiselect",True)
+	Gui.FormPurgeWOs.GsGCJobs.SetGridViewProperty("Jobs","AllowFilter",False)
+	Gui.FormPurgeWOs.GsGCJobs.SetGridViewProperty("Jobs","optionsviewshowgrouppanel",False)
+	
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","PART","Visible",False)
+	
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","Select","VisibleIndex",0)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","Select","ReadOnly",False)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","Select","AllowEdit",True)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","Select","Width","500")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","Select","HeaderHAlignment","Center")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","Select","AllowSize",False)
+	
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","JOB","Caption","Job ")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","JOB","ReadOnly",True)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","JOB","AllowEdit",False)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","JOB","Width","700")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","JOB","AllowSize",False)
+	
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","SUFFIX","Caption","Suffix ")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","SUFFIX","ReadOnly",True)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","SUFFIX","AllowEdit",False)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","SUFFIX","Width","450")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","SUFFIX","AllowSize",False)
+	
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DATE_CLOSED","Caption","Date Closed")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DATE_CLOSED","ReadOnly",True)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DATE_CLOSED","AllowEdit",False)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DATE_CLOSED","HeaderHAlignment","Center")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DATE_CLOSED","CellHAlignment","Center")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DATE_CLOSED","DisplayCustomDatetime","d")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DATE_CLOSED","Width","800")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DATE_CLOSED","AllowSize",False)
+	
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DISPLAY_PART","Caption","Part ")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DISPLAY_PART","ReadOnly",True)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DISPLAY_PART","AllowEdit",False)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DISPLAY_PART","Width","2000")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DISPLAY_PART","AllowSize",False)
+	F.Intrinsic.Control.If(V.Global.bLongPart)
+		Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DISPLAY_PART","MinWidth","250")
+	F.Intrinsic.Control.EndIf
+	
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","LOCATION","Caption","Loc")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","LOCATION","ReadOnly",True)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","LOCATION","AllowEdit",False)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","LOCATION","Width","300")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","LOCATION","AllowSize",False)
+	
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DESCRIPTION","Caption","Descripton ")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DESCRIPTION","ReadOnly",True)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DESCRIPTION","AllowEdit",False)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DESCRIPTION","Width","5000")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","DESCRIPTION","AllowSize",False)
+	
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","History","VisibleIndex",7)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","History","ReadOnly",True)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","History","AllowEdit",False)
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","History","HeaderHAlignment","Center")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","History","Width","500")
+	Gui.FormPurgeWOs.GsGCJobs.SetColumnProperty("Jobs","History","AllowSize",False)
+
+	F.Intrinsic.Control.For(V.Local.iCnt,0,V.DataTable.Jobs.RowCount--,1)
+		Function.Intrinsic.Math.Mod(V.Local.iCnt,2,V.Local.iRet)
+		Function.Intrinsic.Control.If(V.Local.iRet,=,0)
+			Gui.FormPurgeWOs.GsGCJobs.SetRowAppearance("Jobs",V.Local.iCnt,"BackColor","AliceBlue")
+		Function.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.Next(V.Local.iCnt)
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: GAB_4073_Purge_WOs.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}.",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.GridViewProperties.End
+
+Program.Sub.CreateTables.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.iHndl.Declare(Long)
+	V.Local.iCount.Declare(Long,0)
+	V.Local.bTableExists.Declare(Boolean)
+	V.Local.bFieldExists.Declare(Boolean)
+	V.Local.sFileLoc.Declare(String)
+	V.Local.sFileLoc2.Declare(String)
+	V.Local.sCreateTables.Declare(String)
+	V.Local.sGSVersionCheck.Declare(String)
+	V.Local.bFileExists.Declare(Boolean)
+	V.Local.sSQL.Declare(String)
+	V.Local.sMsg.Declare
+
+	F.Intrinsic.File.GetHandle(V.Local.iHndl)
+	F.Intrinsic.String.Concat(V.Caller.ScriptsDir,"\GAB_4073_Purge_WO_Tables.bat",V.Local.sFileLoc)
+	F.Intrinsic.File.OpenForWrite(V.Local.sFileLoc,V.Local.iHndl)
+
+	F.Intrinsic.String.Build("{0}\GAB\GAS\GAB_4073_Purge_WO_Check.txt",V.Caller.PluginsDir,V.Local.sFileLoc2)
+	F.Intrinsic.File.Exists(V.Local.sFileLoc2,V.Local.bFileExists)
+
+	'JOB_HIST_DTL
+	F.Intrinsic.Control.If(V.Caller.GSSVersion,=,2015.3)
+		F.ODBC.Connection!con.FieldExists("JOB_HIST_DTL","SPECIAL_OVHD",V.Local.bFieldExists)
+		F.Intrinsic.Control.If(V.Local.bFieldExists,=,False)
+			F.ODBC.Connection!con.Execute("SET TRUENULLCREATE = OFF;")
+			F.ODBC.Connection!con.Execute("SET TRUEBITCREATE = OFF;")
+			F.ODBC.Connection!con.Execute("DROP TABLE JOB_HIST_DTL IN DICTIONARY;")
+			F.ODBC.Connection!con.Execute("DROP VIEW V_JOB_HIST_DTL;")
+			F.Intrinsic.String.Build("CREATE TABLE JOB_HIST_DTL IN DICTIONARY USING '..\..\FILES\JBHDX{0}'(JOB CHAR(6) NOT NULL,SUFFIX CHAR(3) NOT NULL,SEQ CHAR(6) NOT NULL,FILL CHAR(1) NOT NULL,DATE_SEQUENCE CHAR(6) NOT NULL,SEQUENCE_KEY CHAR(4) NOT NULL,EMPLOYEE_NAME CHAR(30) NOT NULL,DESCRIPTION CHAR(30) NOT NULL,DEPARTMENT CHAR(4) NOT NULL,RATE_WORKCENTER NUMERIC(10,4) NOT NULL,DEPT_EMPLOYEE CHAR(4) NOT NULL,RATE_EMPLOYEE NUMERIC(10,4) NOT NULL,TRAN NUMERIC(2,0) NOT NULL,IDENTIFIER CHAR(20) NOT NULL,EMPLOYEE CHAR(5) NOT NULL,MACHINE CHAR(4) NOT NULL,PART CHAR(20) NOT NULL,FILLER2 CHAR(18) NOT NULL,HOURS_WORKED NUMERIC(12,4) NOT NULL,FLAG_OPT CHAR(1) NOT NULL,PIECES_SCRAP NUMERIC(12,4) NOT NULL,PIECES_COMPLTD NUMERIC(12,4) NOT NULL,AMOUNT_LABOR NUMERIC(10,2) NOT NULL,AMT_OVERHEAD NUMERIC(10,2) NOT NULL,AMT_STANDARD NUMERIC(10,2) NOT NULL,REFERENCE CHAR(15) NOT NULL,FLAG_CLOSED CHAR(1) NOT NULL,UM CHAR(2) NOT NULL,FLAG_INDIRECT CHAR(1) NOT NULL,LMO CHAR(1) NOT NULL,RATE_TYPE CHAR(1) NOT NULL,AMT_SCRAP NUMERIC(10,2) NOT NULL,LOC CHAR(2) NOT NULL,QTY_COMMITTED NUMERIC(14,4) NOT NULL,AMT_COMMITTED NUMERIC(14,2) NOT NULL,LINE_BILLED CHAR(1) NOT NULL,BILL_DATE CHAR(8) NOT NULL,QUAL_NUMBER CHAR(7) NOT NULL,TYPE_FLAG CHAR(1) NOT NULL,EDITED_WO_DTL CHAR(1) NOT NULL,START_MIN NUMERIC(12,4) NOT NULL,END_MIN NUMERIC(12,4) NOT NULL,SCRAP_REASON_1 CHAR(2) NOT NULL,CREW_ID CHAR(4) NOT NULL,SPECIAL_OVHD CHAR(1) NOT NULL,FILLER13 CHAR(13) NOT NULL,MACHINE_HOURS NUMERIC(12,4) NOT NULL,TYPE_TIME CHAR(1) NOT NULL,BALANCED_AS_DATE CHAR(8) NOT NULL,MULTIPLE_FLAG CHAR(1) NOT NULL,CHARGE_DATE CHAR(8) NOT NULL,LUNCH_TAKEN CHAR(1) NOT NULL,BRK1_TAKEN CHAR(1) NOT NULL,BRK2_TAKEN CHAR(1) NOT NULL,BRK3_TAKEN CHAR(1) NOT NULL,BRK4_TAKEN CHAR(1) NOT NULL,MULTIPLE_FRACTION NUMERIC(6,5) NOT NULL,MATL_AMT_CLS NUMERIC(10,2) NOT NULL,LABR_AMT_CLS NUMERIC(10,2) NOT NULL,OVHD_AMT_CLS NUMERIC(10,2) NOT NULL,START_TIME CHAR(4) NOT NULL,END_TIME CHAR(4) NOT NULL,DATE_OUT CHAR(6) NOT NULL,RATE_SCALE CHAR(2) NOT NULL,EARNINGS_CODE CHAR(2) NOT NULL,LBR_BATCH_NO CHAR(5) NOT NULL,LBR_FILE_STATUS CHAR(1) NOT NULL,SHIFT_SHIFT CHAR(1) NOT NULL,SHIFT_DEPT CHAR(4) NOT NULL,SHIFT_GROUP CHAR(8) NOT NULL,NEG_WIP_FG_DONE CHAR(1) NOT NULL,EXPORTED CHAR(1) NOT NULL,EDIT_NOT_ALLOWED CHAR(1) NOT NULL,EDITED_FOR_OT CHAR(1) NOT NULL,LTLQL_ID NUMERIC(9,0) NOT NULL,NEG_ISSUE_DONE CHAR(1) NOT NULL,ABSENCE CHAR(1) NOT NULL,PAID CHAR(1) NOT NULL,EXCUSED CHAR(1) NOT NULL,SCRAP_RECS_EXIST NUMERIC(1,0) NOT NULL,PAYROLL_LOCK BIT NOT NULL,WIP_TO_FG_QTY NUMERIC(12,4) NOT NULL,OUTS_AMT_CLS NUMERIC(10,2) NOT NULL,FRGT_AMT_CLS NUMERIC(10,2) NOT NULL,OTH_AMT_CLS NUMERIC(10,2) NOT NULL,FILLER CHAR(29) NOT NULL,DATE_LAST_CHG CHAR(8) NOT NULL,TIME_LAST_CHG CHAR(8) NOT NULL,LAST_CHG_BY CHAR(8) NOT NULL,LAST_CHG_PROG CHAR(8) NOT NULL);",V.Caller.CompanyCode,V.Local.sSQL)
+			F.ODBC.Connection!con.Execute(V.Local.sSQL)
+			F.ODBC.Connection!con.Execute("CREATE INDEX JOB_HIST_DTLK00 IN DICTIONARY ON JOB_HIST_DTL(JOB ASC,SUFFIX ASC,SEQ ASC);")
+			F.ODBC.Connection!con.Execute("CREATE INDEX JOB_HIST_DTLK01 IN DICTIONARY ON JOB_HIST_DTL(EMPLOYEE ASC);")
+			F.ODBC.Connection!con.Execute("CREATE INDEX JOB_HIST_DTLK02 IN DICTIONARY ON JOB_HIST_DTL(MACHINE ASC);")
+			F.ODBC.Connection!con.Execute("CREATE INDEX JOB_HIST_DTLK03 IN DICTIONARY ON JOB_HIST_DTL(DATE_SEQUENCE ASC);")
+			F.ODBC.Connection!con.Execute("CREATE UNIQUE NOT MODIFIABLE INDEX JOB_HIST_DTLK04 IN DICTIONARY ON JOB_HIST_DTL(JOB ASC,SUFFIX ASC,SEQ ASC,FILL ASC,DATE_SEQUENCE ASC,SEQUENCE_KEY ASC);")
+			F.ODBC.Connection!con.Execute("CREATE INDEX JOB_HIST_DTLK05 IN DICTIONARY ON JOB_HIST_DTL(JOB ASC,SUFFIX ASC);")
+			F.ODBC.Connection!con.Execute("CREATE VIEW V_JOB_HIST_DTL AS SELECT JOB ,SUFFIX ,SEQ ,IF(SUBSTRING(DATE_SEQUENCE,1,2) <= '99' AND SUBSTRING(DATE_SEQUENCE,1,2) >= '00' AND SUBSTRING(DATE_SEQUENCE,3,2) <= '12' AND SUBSTRING(DATE_SEQUENCE,3,2) >= '01' AND SUBSTRING(DATE_SEQUENCE,5,2) <= '31' AND SUBSTRING(DATE_SEQUENCE,5,2) >= '01',IF(SUBSTRING(DATE_SEQUENCE,1,2) < '80',CONVERT('20' + SUBSTRING(DATE_SEQUENCE,1,2) + '-' + SUBSTRING(DATE_SEQUENCE,3,2) + '-' + SUBSTRING(DATE_SEQUENCE,5,2),SQL_DATE),CONVERT('19' + SUBSTRING(DATE_SEQUENCE,1,2) + '-' + SUBSTRING(DATE_SEQUENCE,3,2) + '-' + SUBSTRING(DATE_SEQUENCE,5,2),SQL_DATE)),CONVERT('1900-01-01',SQL_DATE)) AS DATE_SEQUENCE,SEQUENCE_KEY ,EMPLOYEE_NAME ,DESCRIPTION ,DEPARTMENT ,RATE_WORKCENTER ,DEPT_EMPLOYEE ,RATE_EMPLOYEE ,TRAN ,IDENTIFIER ,EMPLOYEE ,MACHINE ,PART ,HOURS_WORKED ,FLAG_OPT ,PIECES_SCRAP ,PIECES_COMPLTD ,AMOUNT_LABOR ,AMT_OVERHEAD ,AMT_STANDARD ,REFERENCE ,FLAG_CLOSED ,UM ,FLAG_INDIRECT ,LMO ,RATE_TYPE ,AMT_SCRAP ,LOC ,QTY_COMMITTED ,AMT_COMMITTED ,LINE_BILLED ,IF(SUBSTRING(BILL_DATE,1,4) >= '1900' AND SUBSTRING(BILL_DATE,1,4) <= '2999' AND SUBSTRING(BILL_DATE,5,2) <= '12' AND SUBSTRING(BILL_DATE,5,2) >= '01' AND SUBSTRING(BILL_DATE,7,2) <= '31' AND SUBSTRING(BILL_DATE,7,2) >= '01',CONVERT(SUBSTRING(BILL_DATE,1,4) + '-' + SUBSTRING(BILL_DATE,5,2) + '-' + SUBSTRING(BILL_DATE,7,2),SQL_DATE),CONVERT('1900-01-01',SQL_DATE)) AS BILL_DATE,QUAL_NUMBER ,TYPE_FLAG ,EDITED_WO_DTL ,START_MIN ,END_MIN ,SCRAP_REASON_1 ,CREW_ID ,SPECIAL_OVHD ,MACHINE_HOURS ,TYPE_TIME ,IF(SUBSTRING(BALANCED_AS_DATE,1,4) >= '1900' AND SUBSTRING(BALANCED_AS_DATE,1,4) <= '2999' AND SUBSTRING(BALANCED_AS_DATE,5,2) <= '12' AND SUBSTRING(BALANCED_AS_DATE,5,2) >= '01' AND SUBSTRING(BALANCED_AS_DATE,7,2) <= '31' AND SUBSTRING(BALANCED_AS_DATE,7,2) >= '01',CONVERT(SUBSTRING(BALANCED_AS_DATE,1,4) + '-' + SUBSTRING(BALANCED_AS_DATE,5,2) + '-' + SUBSTRING(BALANCED_AS_DATE,7,2),SQL_DATE),CONVERT('1900-01-01',SQL_DATE)) AS BALANCED_AS_DATE,MULTIPLE_FLAG ,IF(SUBSTRING(CHARGE_DATE,1,4) >= '1900' AND SUBSTRING(CHARGE_DATE,1,4) <= '2999' AND SUBSTRING(CHARGE_DATE,5,2) <= '12' AND SUBSTRING(CHARGE_DATE,5,2) >= '01' AND SUBSTRING(CHARGE_DATE,7,2) <= '31' AND SUBSTRING(CHARGE_DATE,7,2) >= '01',CONVERT(SUBSTRING(CHARGE_DATE,1,4) + '-' + SUBSTRING(CHARGE_DATE,5,2) + '-' + SUBSTRING(CHARGE_DATE,7,2),SQL_DATE),CONVERT('1900-01-01',SQL_DATE)) AS CHARGE_DATE,LUNCH_TAKEN ,BRK1_TAKEN ,BRK2_TAKEN ,BRK3_TAKEN ,BRK4_TAKEN ,MULTIPLE_FRACTION ,MATL_AMT_CLS ,LABR_AMT_CLS ,OVHD_AMT_CLS ,START_TIME ,END_TIME ,IF(SUBSTRING(DATE_OUT,1,2) <= '99' AND SUBSTRING(DATE_OUT,1,2) >= '00' AND SUBSTRING(DATE_OUT,3,2) <= '12' AND SUBSTRING(DATE_OUT,3,2) >= '01' AND SUBSTRING(DATE_OUT,5,2) <= '31' AND SUBSTRING(DATE_OUT,5,2) >= '01',IF(SUBSTRING(DATE_OUT,1,2) < '80',CONVERT('20' + SUBSTRING(DATE_OUT,1,2) + '-' + SUBSTRING(DATE_OUT,3,2) + '-' + SUBSTRING(DATE_OUT,5,2),SQL_DATE),CONVERT('19' + SUBSTRING(DATE_OUT,1,2) + '-' + SUBSTRING(DATE_OUT,3,2) + '-' + SUBSTRING(DATE_OUT,5,2),SQL_DATE)),CONVERT('1900-01-01',SQL_DATE)) AS DATE_OUT,RATE_SCALE ,EARNINGS_CODE ,LBR_BATCH_NO ,LBR_FILE_STATUS ,SHIFT_SHIFT ,SHIFT_DEPT ,SHIFT_GROUP ,NEG_WIP_FG_DONE ,EXPORTED ,EDIT_NOT_ALLOWED ,EDITED_FOR_OT ,LTLQL_ID ,NEG_ISSUE_DONE ,ABSENCE ,PAID ,EXCUSED ,SCRAP_RECS_EXIST ,PAYROLL_LOCK ,WIP_TO_FG_QTY ,OUTS_AMT_CLS ,FRGT_AMT_CLS ,OTH_AMT_CLS ,IF(SUBSTRING(DATE_LAST_CHG,1,4) >= '1900' AND SUBSTRING(DATE_LAST_CHG,1,4) <= '2999' AND SUBSTRING(DATE_LAST_CHG,5,2) <= '12' AND SUBSTRING(DATE_LAST_CHG,5,2) >= '01' AND SUBSTRING(DATE_LAST_CHG,7,2) <= '31' AND SUBSTRING(DATE_LAST_CHG,7,2) >= '01',CONVERT(SUBSTRING(DATE_LAST_CHG,1,4) + '-' + SUBSTRING(DATE_LAST_CHG,5,2) + '-' + SUBSTRING(DATE_LAST_CHG,7,2),SQL_DATE),CONVERT('1900-01-01',SQL_DATE)) AS DATE_LAST_CHG,IF(TIME_LAST_CHG > '000000' AND SUBSTRING(TIME_LAST_CHG,1,2) <= '24' AND SUBSTRING(TIME_LAST_CHG,3,2) < '60' AND SUBSTRING(TIME_LAST_CHG,5,2) < '60',CONVERT(SUBSTRING(TIME_LAST_CHG,1,2) + ':' + SUBSTRING(TIME_LAST_CHG,3,2) + ':' + SUBSTRING(TIME_LAST_CHG,5,2),SQL_TIME),CONVERT('00:00:00',SQL_TIME)) AS TIME_LAST_CHG ,LAST_CHG_BY ,LAST_CHG_PROG FROM JOB_HIST_DTL;")
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+
+	'COMMENTS - NOTES
+	F.Intrinsic.Control.If(V.Caller.GSSVersion,=,2015.3,"OR",V.Caller.GSSVersion,=,2016.1)
+		F.Intrinsic.Control.If(V.Local.bFileExists,=,False)
+			F.Intrinsic.File.String2File(V.Local.sFileLoc2,V.Caller.GSSVersion)
+				'COMMENTS
+				F.ODBC.Connection!con.TableExists("COMMENTS_TEMP",V.Local.bTableExists)
+				F.Intrinsic.Control.If(V.Local.bTableExists,=,True)
+					F.ODBC.Connection!con.Execute("DROP TABLE COMMENTS_TEMP;")
+				F.Intrinsic.Control.EndIf
+				F.Intrinsic.Math.Add(V.Local.iCount,1,V.Local.iCount)
+				F.Intrinsic.String.Concat(V.Caller.PluginsDir,"\GSSCOMPARE.EXE #C",V.Caller.CompanyCode," #V",V.Caller.GSSVersion," #TCOMMENTS $DB0 #DCOMMENTS_TEMP",V.Local.sCreateTables)
+				F.Intrinsic.File.WriteLine(V.Local.iHndl,V.Local.sCreateTables)
+				'COMMENTS_XREF
+				F.ODBC.Connection!con.TableExists("COMMENTS_XREF_TEMP",V.Local.bTableExists)
+				F.Intrinsic.Control.If(V.Local.bTableExists,=,True)
+					F.ODBC.Connection!con.Execute("DROP TABLE COMMENTS_XREF_TEMP;")
+				F.Intrinsic.Control.EndIf
+				F.Intrinsic.Math.Add(V.Local.iCount,1,V.Local.iCount)
+				F.Intrinsic.String.Concat(V.Caller.PluginsDir,"\GSSCOMPARE.EXE #C",V.Caller.CompanyCode," #V",V.Caller.GSSVersion," #TCOMMENTS_XREF $DB0 #DCOMMENTS_XREF_TEMP",V.Local.sCreateTables)
+				F.Intrinsic.File.WriteLine(V.Local.iHndl,V.Local.sCreateTables)
+		F.Intrinsic.Control.Else
+			F.Intrinsic.File.File2String(V.Local.sFileLoc2,V.Local.sGSVersionCheck)
+			F.Intrinsic.Control.If(V.Local.sGSVersionCheck,<>,V.Caller.GSSVersion)
+				F.Intrinsic.File.String2File(V.Local.sFileLoc2,V.Caller.GSSVersion)
+					'COMMENTS
+					F.ODBC.Connection!con.TableExists("COMMENTS_TEMP",V.Local.bTableExists)
+					F.Intrinsic.Control.If(V.Local.bTableExists,=,True)
+						F.ODBC.Connection!con.Execute("DROP TABLE COMMENTS_TEMP;")
+					F.Intrinsic.Control.EndIf
+					F.Intrinsic.Math.Add(V.Local.iCount,1,V.Local.iCount)
+					F.Intrinsic.String.Concat(V.Caller.PluginsDir,"\GSSCOMPARE.EXE #C",V.Caller.CompanyCode," #V",V.Caller.GSSVersion," #TCOMMENTS $DB0 #DCOMMENTS_TEMP",V.Local.sCreateTables)
+					F.Intrinsic.File.WriteLine(V.Local.iHndl,V.Local.sCreateTables)
+					'COMMENTS_XREF
+					F.ODBC.Connection!con.TableExists("COMMENTS_XREF_TEMP",V.Local.bTableExists)
+					F.Intrinsic.Control.If(V.Local.bTableExists,=,True)
+						F.ODBC.Connection!con.Execute("DROP TABLE COMMENTS_XREF_TEMP;")
+					F.Intrinsic.Control.EndIf
+					F.Intrinsic.Math.Add(V.Local.iCount,1,V.Local.iCount)
+					F.Intrinsic.String.Concat(V.Caller.PluginsDir,"\GSSCOMPARE.EXE #C",V.Caller.CompanyCode," #V",V.Caller.GSSVersion," #TCOMMENTS_XREF $DB0 #DCOMMENTS_XREF_TEMP",V.Local.sCreateTables)
+					F.Intrinsic.File.WriteLine(V.Local.iHndl,V.Local.sCreateTables)
+			F.Intrinsic.Control.EndIf
+		F.Intrinsic.Control.EndIf
+	F.Intrinsic.Control.EndIf
+
+	F.Intrinsic.Control.If(V.Local.iCount,<>,0)
+		F.Intrinsic.File.CloseFile(V.Local.iHndl)
+		F.Intrinsic.Task.ShellExec(V.Local.iHndl,"Open",V.Local.sFileLoc,"","",1)
+		Function.Intrinsic.UI.Sleep(10)
+		Function.Intrinsic.String.Build("****WARNING****{0}{0}This is a one time run for the creation of the custom tables. After, GSSCompare runs and the Command Prompt Window closes, click OK to continue.{0}{0}****WARNING****",V.Ambient.NewLine,V.Local.sMsg)
+		F.Intrinsic.UI.Msgbox(V.Local.sMsg,"IMPORTANT")
+		F.Intrinsic.File.DeleteFile(V.Local.sFileLoc)
+		F.Intrinsic.Control.ExitSub
+	F.Intrinsic.Control.Else
+		F.Intrinsic.File.CloseFile(V.Local.iHndl)
+		F.Intrinsic.File.DeleteFile(V.Local.sFileLoc)
+		F.Intrinsic.Control.ExitSub
+	F.Intrinsic.Control.EndIf
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: GAB_4073_Purge_WOs.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}.",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.CreateTables.End
+
+Program.Sub.SetAnchors.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	Gui.FormPurgeWOs.lblPurgeDate.Anchor(5)
+	Gui.FormPurgeWOs.dtpPurgeDate.Anchor(5)
+	Gui.FormPurgeWOs.cmdRun.Anchor(5)
+	Gui.FormPurgeWOs.lblProgBar.Anchor(9)
+	Gui.FormPurgeWOs.progressBar1.Anchor(9)
+	Gui.FormPurgeWOs.lblSelected.Anchor(9)
+	Gui.FormPurgeWOs.lblValue.Anchor(9)
+	Gui.FormPurgeWOs.cmdPurge.Anchor(6)
+	Gui.FormPurgeWOs.GsGCJobs.Anchor(15)
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: GAB_4073_Purge_WOs.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}.",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.SetAnchors.End
+
+Program.Sub.cmdUnSelAll_Click.Start
+	F.Intrinsic.Control.Try
+	V.Local.sError.Declare
+	
+	V.Local.iCnt.Declare(Long,0)
+
+	F.Intrinsic.Control.If(V.DataTable.Jobs.Exists,=,False)
+		F.Intrinsic.Control.ExitSub
+	F.Intrinsic.Control.EndIf	
+
+	Gui.FormPurgeWOs.lblProgBar.Visible(True)
+	Gui.FormPurgeWOs.lblProgBar.Caption("Unselecting All Jobs....")
+	Gui.FormPurgeWOs.progressBar1.Visible(True)
+	Gui.FormPurgeWOs.progressBar1.Min(0)
+	Gui.FormPurgeWOs.progressBar1.Max(V.DataTable.Jobs.Rowcount)
+	Gui.FormPurgeWOs.dtpPurgeDate.Enabled(False)
+	Gui.FormPurgeWOs.cmdRun.Enabled(False)
+	Gui.FormPurgeWOs.cmdPurge.Enabled(False)
+	Gui.FormPurgeWOs.cmdUnSelAll.Enabled(False)
+
+	F.Intrinsic.Control.For(V.Local.iCnt,0,V.DataTable.Jobs.RowCount--,1)
+		Gui.FormPurgeWOs.progressBar1.Value(V.Local.iCnt)
+		F.Data.DataTable.SetValue("Jobs",V.Local.iCnt,"Select",False)
+		Gui.FormPurgeWOs.lblValue.Caption(0)
+	F.Intrinsic.Control.Next(V.Local.iCnt)
+
+	Gui.FormPurgeWOs.progressBar1.Visible(False)
+	Gui.FormPurgeWOs.lblProgBar.Visible(False)
+	Gui.FormPurgeWOs.dtpPurgeDate.Enabled(True)
+	Gui.FormPurgeWOs.cmdRun.Enabled(True)
+	Gui.FormPurgeWOs.cmdPurge.Enabled(True)
+	Gui.FormPurgeWOs.cmdUnSelAll.Enabled(True)
+	
+	F.Intrinsic.Control.Catch
+		F.Intrinsic.String.Build("Project: GAB_4073_Purge_WOs.g2u{0}{0}Subroutine: {1}{0}Error Occurred {2} with description {3}.",V.Ambient.Newline,V.Ambient.CurrentSubroutine,V.Ambient.ErrorNumber,V.Ambient.ErrorDescription,V.Local.sError)
+		F.Intrinsic.UI.Msgbox(V.Local.sError)
+		F.Intrinsic.Control.End 
+	F.Intrinsic.Control.EndTry
+Program.Sub.cmdUnSelAll_Click.End
+
+Program.Sub.Comments.Start
+${$0$}$GAB_####_Purge_WOs$}$SUPERVSR$}$05/18/2016 9:36:53 AM$}$False
+Program.Sub.Comments.End
